@@ -22,8 +22,7 @@ def chunk_page(
     """
     words = page["text"].split()
     step = words_per_chunk - overlap_words
-    if step < 1:
-        step = 1
+    step = max(step, 1)
 
     chunks = []
     for chunk_index, start in enumerate(range(0, len(words), step)):

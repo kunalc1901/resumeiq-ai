@@ -1,8 +1,8 @@
 from fastapi import Request
-from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 
-from core.exceptions import NotFoundException, BadRequestException
+from core.exceptions import BadRequestException, NotFoundException
 
 
 async def validation_error_handler(request: Request, exc: RequestValidationError):

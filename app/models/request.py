@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+
 class ResumeProcessRequest(BaseModel):
     """Request body for processing an existing resume (created on upload)."""
 
@@ -13,6 +14,7 @@ class ChatRequest(BaseModel):
     token: str
     resume_id: str
     question: str
+
 
 class JobMatchRequest(BaseModel):
     """Request body for matching resume to a job."""

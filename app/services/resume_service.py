@@ -1,5 +1,7 @@
 import json
 import time
+from collections import OrderedDict
+from typing import Any
 
 from core.exceptions import BadRequestException, NotFoundException
 from core.prompts import RESUME_EXTRACTION_PROMPT, get_job_match_prompt
@@ -7,6 +9,7 @@ from database.mongodb import get_collection
 from models.request import ResumeProcessRequest
 from models.resume import ResumeAnalysis
 from repositories.resume_repository import ResumeRepository
+from services.llm import ask_llm, ask_llm_full_text
 from utils.aws import fetch_pdf_bytes_from_s3
 from utils.chunker import chunk_document
 from utils.pdf_reader import read_pdf
@@ -17,9 +20,6 @@ from utils.resume_utils import (
     parse_llm_dict,
 )
 from utils.vector_store import VectorStore
-from services.llm import ask_llm, ask_llm_full_text
-from collections import OrderedDict
-from typing import Any
 
 
 def ask_resume(question: str, user: dict, resume_id: str) -> str:
@@ -283,8 +283,8 @@ Return JSON only.
 
     try:
         result = parse_llm_dict(raw)
-    except Exception as exc:
-        raise BadRequestException(f"Failed to parse job requirements: {exc}")
+    except (ValueError, SyntaxError) as exc:
+        raise BadRequestException(f"Failed to parse job requirements: {exc}") from exc
 
     requirements = result.get("requirements")
 
@@ -451,7 +451,7 @@ def retrieve_requirement_evidence(
                 top_k=per_requirement_top_k,
             )
 
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - vector search failures are non-fatal
             print(
                 f"[job-match] retrieval failed for {requirement_id}: {exc}",
                 flush=True,
@@ -595,7 +595,7 @@ def _log_job_match(message: str) -> None:
     """Print a timestamped [job-match] log line."""
     from datetime import datetime
 
-    ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    ts = datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S")
     print(f"[job-match] {ts} {message}", flush=True)
 
 

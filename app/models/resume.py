@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -7,8 +6,8 @@ from pydantic import BaseModel, Field
 class Duration(BaseModel):
     """Duration of a work experience. The MongoDB field is 'from' (Python keyword)."""
 
-    from_: Optional[str] = Field(default=None, alias="from")
-    to: Optional[str] = None
+    from_: str | None = Field(default=None, alias="from")
+    to: str | None = None
 
     model_config = {"populate_by_name": True}
 
@@ -18,7 +17,7 @@ class WorkExperience(BaseModel):
 
     company: str
     designation: str
-    duration: Optional[Duration] = None
+    duration: Duration | None = None
     work_summary: str
 
 
@@ -50,27 +49,27 @@ class ResumeAnalysis(BaseModel):
     """Structured data extracted from a processed resume."""
 
     name: str
-    email: Optional[str] = None
-    pno: Optional[str] = None
-    summary: Optional[str] = None
-    college: Optional[str] = None
-    degree: Optional[str] = None
-    work_experience: List[WorkExperience] = Field(default_factory=list)
-    skills: Dict[str, List[str]] = Field(default_factory=dict)
+    email: str | None = None
+    pno: str | None = None
+    summary: str | None = None
+    college: str | None = None
+    degree: str | None = None
+    work_experience: list[WorkExperience] = Field(default_factory=list)
+    skills: dict[str, list[str]] = Field(default_factory=dict)
 
     # ResumeIQ overall scoring (0-100)
-    overall_score: Optional[int] = Field(default=None, ge=0, le=100)
-    score_breakdown: Optional[ScoreBreakdown] = Field(default=None)
-    score_summary: Optional[str] = Field(default=None)
-    strengths: Optional[List[str]] = Field(default=None)
-    improvements: Optional[List[str]] = Field(default=None)
+    overall_score: int | None = Field(default=None, ge=0, le=100)
+    score_breakdown: ScoreBreakdown | None = Field(default=None)
+    score_summary: str | None = Field(default=None)
+    strengths: list[str] | None = Field(default=None)
+    improvements: list[str] | None = Field(default=None)
 
     # ResumeIQ ATS compatibility scoring (0-100)
-    ats_score: Optional[int] = Field(default=None, ge=0, le=100)
-    ats_score_breakdown: Optional[AtsScoreBreakdown] = Field(default=None)
-    ats_summary: Optional[str] = Field(default=None)
-    ats_strengths: Optional[List[str]] = Field(default=None)
-    ats_improvements: Optional[List[str]] = Field(default=None)
+    ats_score: int | None = Field(default=None, ge=0, le=100)
+    ats_score_breakdown: AtsScoreBreakdown | None = Field(default=None)
+    ats_summary: str | None = Field(default=None)
+    ats_strengths: list[str] | None = Field(default=None)
+    ats_improvements: list[str] | None = Field(default=None)
 
 
 class ResumeModel(BaseModel):
@@ -81,9 +80,9 @@ class ResumeModel(BaseModel):
     processing. The id field holds the hex string of the ObjectId.
     """
 
-    id: Optional[str] = None
-    user_id: Optional[str] = None
-    file_name: Optional[str] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
-    analysis: Optional[ResumeAnalysis] = None
+    id: str | None = None
+    user_id: str | None = None
+    file_name: str | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+    analysis: ResumeAnalysis | None = None

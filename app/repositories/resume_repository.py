@@ -1,7 +1,9 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from bson import ObjectId
+from bson.errors import InvalidId
 from pymongo.collection import Collection
+from pymongo.errors import PyMongoError
 
 from models.resume import ResumeAnalysis, ResumeModel
 
@@ -23,7 +25,7 @@ class ResumeRepository:
             doc = self.collection.find_one(
                 {"_id": ObjectId(resume_id), "user_id": user_id}
             )
-        except Exception:
+        except (InvalidId, PyMongoError):
             return None
 
         if doc is None:
@@ -42,7 +44,7 @@ class ResumeRepository:
 
         Returns ``True`` if the document was matched and updated.
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         result = self.collection.update_one(
             {"_id": ObjectId(resume_id), "user_id": user_id},
             {

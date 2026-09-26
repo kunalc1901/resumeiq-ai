@@ -1,12 +1,14 @@
 from fastapi import APIRouter, Request
-from models.request import ChatRequest, ResumeProcessRequest, JobMatchRequest
+
+from models.request import ChatRequest, JobMatchRequest, ResumeProcessRequest
 from services.resume_service import (
     ask_resume,
+    match_resume_with_job,
     process_new_resume,
-    match_resume_with_job
 )
 
 router = APIRouter()
+
 
 @router.post("/process", status_code=200)
 def process_resume(request: ResumeProcessRequest, http_request: Request):
@@ -20,6 +22,7 @@ def ask_question(request: ChatRequest, http_request: Request):
     """Answer a question about a specific resume."""
     answer = ask_resume(request.question, http_request.state.user, request.resume_id)
     return {"answer": answer}
+
 
 @router.post("/job-match")
 def match_job(request: JobMatchRequest, http_request: Request):

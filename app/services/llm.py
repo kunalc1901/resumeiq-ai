@@ -29,7 +29,7 @@ SYSTEM_MESSAGE = "You answer questions concisely based on provided context."
 
 def _now() -> str:
     """Current local time as a readable timestamp for logs."""
-    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    return datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S")
 
 
 def _estimate_tokens(text: str) -> int:

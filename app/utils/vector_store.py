@@ -49,7 +49,7 @@ class VectorStore:
         documents = []
         metadatas = []
 
-        for i, chunk in enumerate(chunks):
+        for chunk in chunks:
             digest = hashlib.md5(chunk["content"].encode()).hexdigest()[:16]
             ids.append(f"{user_id}_{resume_id}_{digest}")
             documents.append(chunk["content"])

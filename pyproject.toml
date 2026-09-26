@@ -1,0 +1,67 @@
+# ============================================================
+# Project configuration
+# ============================================================
+#
+# This file is read by the Ruff linter/formatter (both the `ruff`
+# CLI and the Ruff VS Code extension) so that checks behave the
+# same everywhere. It does NOT control how the app runs — Python
+# dependencies are managed via requirements.txt and runtime
+# settings live in .env (see .env.example).
+#
+# Format is TOML: plain text, `[section]` headers, `key = value`.
+# ============================================================
+
+# ------------------------------------------------------------
+# [tool.ruff] - base settings for the Ruff formatter/linter
+# ------------------------------------------------------------
+[tool.ruff]
+line-length = 88  # wrap lines at 88 chars (same style as Black)
+target-version = "py312"  # code targets Python 3.12
+
+# ------------------------------------------------------------
+# [tool.ruff.lint] - which lint rules are enabled
+# ------------------------------------------------------------
+# Rule codes: E/pycodestyle, F/pyflakes, I/isort, UP/pyupgrade,
+# B/flake8-bugbear, BLE/flake8-blind-except, DTZ/naive datetime,
+# PLR1730 (pylint-style simplifications).
+[tool.ruff.lint]
+select = [
+    "E4",  # pycodestyle (import not at top, etc.)
+    "E7",
+    "E9",
+    "F",  # pyflakes (unused imports, undefined names, ...)
+    "I",  # isort (import sorting)
+    "UP",  # pyupgrade (modern syntax: X | None, list/dict, ...)
+    "B",  # flake8-bugbear (common bugs)
+    "BLE",  # blind except
+    "DTZ",  # naive datetime
+    "PLR1730",  # `if x < 1: x = 1` -> `x = max(x, 1)`
+]
+ignore = [
+    # E402: imports after the sys.path bootstrap in app/main.py are
+    # intentional there (matches ruff's default behaviour).
+    "E402",
+]
+
+# ------------------------------------------------------------
+# [tool.ruff.lint.isort] - how imports are ordered
+# ------------------------------------------------------------
+# Imports are grouped as: stdlib -> third-party (fastapi, pymongo,
+# ...) -> first-party (this app's own packages, listed below).
+[tool.ruff.lint.isort]
+known-first-party = [
+    "api",
+    "core",
+    "database",
+    "middleware",
+    "models",
+    "repositories",
+    "services",
+    "utils",
+]
+
+# ------------------------------------------------------------
+# [tool.ruff.format] - code formatting style
+# ------------------------------------------------------------
+[tool.ruff.format]
+quote-style = "double"  # prefer "double quotes" in formatted code

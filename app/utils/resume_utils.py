@@ -66,7 +66,9 @@ def merge_orphan_projects(work_experience: list) -> list:
             prev = merged[-1]
             extra = item.get("work_summary", "").strip()
             if extra:
-                prev["work_summary"] = (prev.get("work_summary", "").strip() + " " + extra).strip()
+                prev["work_summary"] = (
+                    prev.get("work_summary", "").strip() + " " + extra
+                ).strip()
         else:
             merged.append(dict(item))
     return merged
@@ -111,7 +113,9 @@ def build_structured_profile(analysis) -> str:
     if analysis.summary:
         lines.append(f"Summary: {analysis.summary}")
     if analysis.college or analysis.degree:
-        lines.append(f"Education: {analysis.degree or ''} at {analysis.college or ''}".strip())
+        lines.append(
+            f"Education: {analysis.degree or ''} at {analysis.college or ''}".strip()
+        )
 
     lines.append("Skills:")
     for category, skills in (analysis.skills or {}).items():
@@ -122,7 +126,9 @@ def build_structured_profile(analysis) -> str:
         duration = ""
         if exp.duration:
             duration = f" ({exp.duration.from_} - {exp.duration.to})"
-        lines.append(f"  - {exp.designation} at {exp.company}{duration}: {exp.work_summary}")
+        lines.append(
+            f"  - {exp.designation} at {exp.company}{duration}: {exp.work_summary}"
+        )
 
     return "\n".join(lines)
 

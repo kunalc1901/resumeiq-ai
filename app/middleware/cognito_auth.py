@@ -1,9 +1,11 @@
 import json
 import logging
 import time
+from urllib.error import URLError
 
 import boto3
 import jwt
+from botocore.exceptions import BotoCoreError, ClientError
 from fastapi import Request
 from jwt import PyJWKClient
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -52,7 +54,7 @@ async def _extract_token_from_body(request: Request):
         return None
     try:
         payload = json.loads(raw)
-    except Exception:
+    except json.JSONDecodeError:
         return None
     token = payload.get("token")
     return token if isinstance(token, str) and token else None
@@ -94,11 +96,14 @@ class CognitoAuthMiddleware(BaseHTTPMiddleware):
             return cached["user"]
         try:
             attrs = _get_user_attributes_from_cognito(token)
-        except Exception as exc:
+        except (ClientError, BotoCoreError) as exc:
             logger.warning("Could not fetch user attributes from Cognito: %s", exc)
             attrs = {}
         user = _build_user(claims, attrs)
-        _user_cache[token] = {"expires_at": claims.get("exp") or (now + 300), "user": user}
+        _user_cache[token] = {
+            "expires_at": claims.get("exp") or (now + 300),
+            "user": user,
+        }
         return user
 
     async def dispatch(self, request: Request, call_next):
@@ -126,7 +131,14 @@ class CognitoAuthMiddleware(BaseHTTPMiddleware):
         try:
             claims = self._validate_token(token)
             user = self._get_user(token, claims)
-        except Exception:
+        except (
+            jwt.PyJWTError,
+            ValueError,
+            KeyError,
+            ClientError,
+            BotoCoreError,
+            URLError,
+        ):
             return JSONResponse({"detail": "Invalid or expired token"}, status_code=401)
 
         request.state.user = user
