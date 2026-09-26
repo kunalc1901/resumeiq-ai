@@ -2,7 +2,7 @@ import json
 import time
 
 from core.exceptions import BadRequestException, NotFoundException
-from core.prompts import (RESUME_EXTRACTION_PROMPT, get_job_match_prompt)
+from core.prompts import RESUME_EXTRACTION_PROMPT, get_job_match_prompt
 from database.mongodb import get_collection
 from models.request import ResumeProcessRequest
 from models.resume import ResumeAnalysis
@@ -43,7 +43,9 @@ def process_new_resume(request: ResumeProcessRequest, user: dict) -> str:
         )
 
     pdf_key = f"unzipped/6a7c71a6779ce5a3090ce92c/{user['sub']}/{resume.file_name}"
-    print(f"[0/6] Authenticated user: {user.get('email')} ({user.get('sub')})", flush=True)
+    print(
+        f"[0/6] Authenticated user: {user.get('email')} ({user.get('sub')})", flush=True
+    )
 
     print(f"[1/6] Fetching PDF from S3: {pdf_key}", flush=True)
     pdf_bytes = fetch_pdf_bytes_from_s3(pdf_key)
@@ -54,7 +56,9 @@ def process_new_resume(request: ResumeProcessRequest, user: dict) -> str:
     print(f"      >> {len(pages)} pages read", flush=True)
 
     full_text = "\n\n".join(page["text"] for page in pages)
-    print(f"[3/6] Sending full resume text to LLM ({len(full_text)} chars)...", flush=True)
+    print(
+        f"[3/6] Sending full resume text to LLM ({len(full_text)} chars)...", flush=True
+    )
 
     extracted = ask_llm_full_text(RESUME_EXTRACTION_PROMPT, full_text)
     print("[4/6] Parsing LLM output...", flush=True)
@@ -76,12 +80,18 @@ def process_new_resume(request: ResumeProcessRequest, user: dict) -> str:
 
     analysis = ResumeAnalysis.model_validate(data)
     repository.update_analysis(request.resume_id, user["sub"], analysis)
-    print(f"[6/6] Analysis saved to MongoDB (collection: resumes): {request.resume_id}", flush=True)
+    print(
+        f"[6/6] Analysis saved to MongoDB (collection: resumes): {request.resume_id}",
+        flush=True,
+    )
 
     chunks = chunk_document(pages)
     store = VectorStore()
     store.add_chunks(chunks, user["sub"], request.resume_id)
-    print(f"      >> {len(chunks)} chunks indexed for resume {request.resume_id}", flush=True)
+    print(
+        f"      >> {len(chunks)} chunks indexed for resume {request.resume_id}",
+        flush=True,
+    )
 
     return request.resume_id
 
@@ -89,6 +99,7 @@ def process_new_resume(request: ResumeProcessRequest, user: dict) -> str:
 # ============================================================
 # JOB REQUIREMENT EXTRACTION
 # ============================================================
+
 
 def extract_job_requirements(
     job_description: str,
@@ -273,16 +284,12 @@ Return JSON only.
     try:
         result = parse_llm_dict(raw)
     except Exception as exc:
-        raise BadRequestException(
-            f"Failed to parse job requirements: {exc}"
-        )
+        raise BadRequestException(f"Failed to parse job requirements: {exc}")
 
     requirements = result.get("requirements")
 
     if not isinstance(requirements, list):
-        raise BadRequestException(
-            "LLM returned invalid job requirements format."
-        )
+        raise BadRequestException("LLM returned invalid job requirements format.")
 
     allowed_categories = {
         "SKILL",
@@ -304,28 +311,19 @@ Return JSON only.
     cleaned: list[dict[str, Any]] = []
 
     for index, item in enumerate(requirements, start=1):
-
         if not isinstance(item, dict):
             continue
 
-        requirement = str(
-            item.get("requirement", "")
-        ).strip()
+        requirement = str(item.get("requirement", "")).strip()
 
-        search_query = str(
-            item.get("searchQuery", "")
-        ).strip()
+        search_query = str(item.get("searchQuery", "")).strip()
 
         if not requirement or not search_query:
             continue
 
-        category = str(
-            item.get("category", "SKILL")
-        ).upper()
+        category = str(item.get("category", "SKILL")).upper()
 
-        priority = str(
-            item.get("priority", "GENERAL")
-        ).upper()
+        priority = str(item.get("priority", "GENERAL")).upper()
 
         if category not in allowed_categories:
             category = "SKILL"
@@ -334,9 +332,7 @@ Return JSON only.
             priority = "GENERAL"
 
         try:
-            importance = int(
-                item.get("importance", 5)
-            )
+            importance = int(item.get("importance", 5))
         except (TypeError, ValueError):
             importance = 5
 
@@ -345,17 +341,16 @@ Return JSON only.
             min(10, importance),
         )
 
-        cleaned.append({
-            "id": str(
-                item.get("id")
-                or f"REQ-{index:03d}"
-            ),
-            "category": category,
-            "requirement": requirement,
-            "priority": priority,
-            "importance": importance,
-            "searchQuery": search_query,
-        })
+        cleaned.append(
+            {
+                "id": str(item.get("id") or f"REQ-{index:03d}"),
+                "category": category,
+                "requirement": requirement,
+                "priority": priority,
+                "importance": importance,
+                "searchQuery": search_query,
+            }
+        )
 
     if not cleaned:
         raise BadRequestException(
@@ -368,6 +363,7 @@ Return JSON only.
 # ============================================================
 # CATEGORY-AWARE RETRIEVAL QUERY
 # ============================================================
+
 
 def build_retrieval_query(
     requirement: dict[str, Any],
@@ -392,26 +388,16 @@ def build_retrieval_query(
             "employment history job titles dates years "
             "professional experience responsibilities"
         ),
-        "EDUCATION": (
-            "education degree university college "
-            "academic qualification"
-        ),
+        "EDUCATION": ("education degree university college academic qualification"),
         "CERTIFICATION": (
-            "certifications licenses credentials "
-            "professional qualifications"
+            "certifications licenses credentials professional qualifications"
         ),
-        "DOMAIN": (
-            "industry domain experience projects "
-            "business domain knowledge"
-        ),
+        "DOMAIN": ("industry domain experience projects business domain knowledge"),
         "SOFT_SKILL": (
             "leadership communication teamwork collaboration "
             "mentoring management professional experience"
         ),
-        "TOOL": (
-            "software tools platforms technologies "
-            "professional experience"
-        ),
+        "TOOL": ("software tools platforms technologies professional experience"),
     }
 
     context = category_context.get(
@@ -425,6 +411,7 @@ def build_retrieval_query(
 # ============================================================
 # RETRIEVE RESUME EVIDENCE
 # ============================================================
+
 
 def retrieve_requirement_evidence(
     requirements: list[dict[str, Any]],
@@ -447,22 +434,14 @@ def retrieve_requirement_evidence(
 
     store = VectorStore()
 
-    unique_chunks: OrderedDict[
-        str,
-        dict[str, Any]
-    ] = OrderedDict()
+    unique_chunks: OrderedDict[str, dict[str, Any]] = OrderedDict()
 
-    requirement_evidence: list[
-        dict[str, Any]
-    ] = []
+    requirement_evidence: list[dict[str, Any]] = []
 
     for requirement in requirements:
-
         requirement_id = requirement["id"]
 
-        search_query = build_retrieval_query(
-            requirement
-        )
+        search_query = build_retrieval_query(requirement)
 
         try:
             chunks = store.search(
@@ -473,10 +452,8 @@ def retrieve_requirement_evidence(
             )
 
         except Exception as exc:
-
             print(
-                f"[job-match] retrieval failed "
-                f"for {requirement_id}: {exc}",
+                f"[job-match] retrieval failed for {requirement_id}: {exc}",
                 flush=True,
             )
 
@@ -485,11 +462,13 @@ def retrieve_requirement_evidence(
         evidence_items = []
 
         for chunk in chunks:
-
-            meta = chunk.get(
-                "meta",
-                {},
-            ) or {}
+            meta = (
+                chunk.get(
+                    "meta",
+                    {},
+                )
+                or {}
+            )
 
             content = str(
                 chunk.get(
@@ -512,10 +491,7 @@ def retrieve_requirement_evidence(
 
             # Fallback when the vector store does not provide
             # a stable chunk ID.
-            dedupe_key = str(
-                chunk_id
-                or f"{resume_id}:{page}:{content}"
-            )
+            dedupe_key = str(chunk_id or f"{resume_id}:{page}:{content}")
 
             evidence = {
                 "chunkId": dedupe_key,
@@ -526,40 +502,34 @@ def retrieve_requirement_evidence(
             evidence_items.append(evidence)
 
             if dedupe_key not in unique_chunks:
-
                 unique_chunks[dedupe_key] = {
                     "chunkId": dedupe_key,
                     "page": page,
                     "content": content,
                 }
 
-        requirement_evidence.append({
-            "requirementId": requirement_id,
-            "requirement": requirement["requirement"],
-            "category": requirement["category"],
-            "priority": requirement["priority"],
-            "importance": requirement["importance"],
-            "evidence": evidence_items,
-        })
+        requirement_evidence.append(
+            {
+                "requirementId": requirement_id,
+                "requirement": requirement["requirement"],
+                "category": requirement["category"],
+                "priority": requirement["priority"],
+                "importance": requirement["importance"],
+                "evidence": evidence_items,
+            }
+        )
 
     # Prevent huge context from reaching the LLM.
-    unique_evidence = list(
-        unique_chunks.values()
-    )[:max_total_chunks]
+    unique_evidence = list(unique_chunks.values())[:max_total_chunks]
 
-    allowed_chunk_ids = {
-        item["chunkId"]
-        for item in unique_evidence
-    }
+    allowed_chunk_ids = {item["chunkId"] for item in unique_evidence}
 
     # Keep only evidence that survived the global limit.
     for item in requirement_evidence:
-
         item["evidence"] = [
             evidence
             for evidence in item["evidence"]
-            if evidence["chunkId"]
-            in allowed_chunk_ids
+            if evidence["chunkId"] in allowed_chunk_ids
         ]
 
     print(
@@ -577,6 +547,7 @@ def retrieve_requirement_evidence(
 # BUILD LLM EVIDENCE CONTEXT
 # ============================================================
 
+
 def build_requirement_evidence_context(
     requirement_evidence: list[dict[str, Any]],
 ) -> str:
@@ -588,7 +559,6 @@ def build_requirement_evidence_context(
     parts: list[str] = []
 
     for item in requirement_evidence:
-
         parts.append(
             f"REQUIREMENT {item['requirementId']}\n"
             f"Requirement: {item['requirement']}\n"
@@ -603,24 +573,17 @@ def build_requirement_evidence_context(
         )
 
         if not evidence:
-
-            parts.append(
-                "No targeted resume evidence was retrieved.\n"
-            )
+            parts.append("No targeted resume evidence was retrieved.\n")
 
         else:
-
             for chunk in evidence:
-
                 page = chunk.get(
                     "page",
                     "unknown",
                 )
 
                 parts.append(
-                    f"[Page {page} | "
-                    f"Chunk {chunk['chunkId']}]\n"
-                    f"{chunk['content']}\n"
+                    f"[Page {page} | Chunk {chunk['chunkId']}]\n{chunk['content']}\n"
                 )
 
         parts.append("\n---\n")
@@ -639,6 +602,7 @@ def _log_job_match(message: str) -> None:
 # ============================================================
 # FINAL RESUME ↔ JOB MATCH
 # ============================================================
+
 
 def match_resume_with_job(
     user: dict,
@@ -668,13 +632,9 @@ def match_resume_with_job(
     _job_match_started = time.time()
 
     if not job_description or not job_description.strip():
-        raise BadRequestException(
-            "job_description is required."
-        )
+        raise BadRequestException("job_description is required.")
 
-    repository = ResumeRepository(
-        get_collection()
-    )
+    repository = ResumeRepository(get_collection())
 
     resume = repository.find_by_id(
         resume_id,
@@ -682,23 +642,18 @@ def match_resume_with_job(
     )
 
     if resume is None:
-        raise NotFoundException(
-            f"Resume {resume_id} not found for this user."
-        )
+        raise NotFoundException(f"Resume {resume_id} not found for this user.")
 
     if resume.analysis is None:
         raise NotFoundException(
-            f"Resume {resume_id} has no analysis yet. "
-            "Process it first."
+            f"Resume {resume_id} has no analysis yet. Process it first."
         )
 
     # --------------------------------------------------------
     # 1. Extract atomic requirements
     # --------------------------------------------------------
 
-    requirements = extract_job_requirements(
-        job_description
-    )
+    requirements = extract_job_requirements(job_description)
 
     # --------------------------------------------------------
     # 2. Retrieve targeted evidence
@@ -716,25 +671,19 @@ def match_resume_with_job(
     # 3. Build structured resume profile
     # --------------------------------------------------------
 
-    structured = build_structured_profile(
-        resume.analysis
-    )
+    structured = build_structured_profile(resume.analysis)
 
     # --------------------------------------------------------
     # 4. Build evidence context
     # --------------------------------------------------------
 
-    evidence_context = (
-        build_requirement_evidence_context(
-            requirement_evidence
-        )
-    )
+    evidence_context = build_requirement_evidence_context(requirement_evidence)
 
     # --------------------------------------------------------
     # 5. Build final LLM context
     # --------------------------------------------------------
 
-    full_context = ( 
+    full_context = (
         "STRUCTURED RESUME:\n"
         + structured
         + "\n\n"
@@ -759,9 +708,7 @@ def match_resume_with_job(
     # 6. Final matching prompt
     # --------------------------------------------------------
 
-    job_match_prompt = get_job_match_prompt(
-        job_description
-    )
+    job_match_prompt = get_job_match_prompt(job_description)
 
     requirements_json = json.dumps(
         requirements,

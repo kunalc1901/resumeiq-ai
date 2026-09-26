@@ -106,7 +106,17 @@ class CognitoAuthMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         if not (settings.COGNITO_REGION and settings.COGNITO_USER_POOL_ID):
-            logger.warning("Cognito not configured - skipping auth validation")
+            logger.info("Cognito not configured - using dev fallback user")
+            request.state.user = {
+                "sub": "dev-user",
+                "username": "dev",
+                "email": "dev@resumeiq.local",
+                "name": "Dev User",
+                "client_id": None,
+                "groups": [],
+                "is_admin": False,
+                "is_super_admin": False,
+            }
             return await call_next(request)
 
         token = await _extract_token_from_body(request)

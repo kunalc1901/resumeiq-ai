@@ -58,8 +58,6 @@ class VectorStore:
             meta["resume_id"] = resume_id
             metadatas.append(meta)
 
-        print(metadatas)
-
         self._collection.add(
             ids=ids,
             documents=documents,

@@ -1,7 +1,9 @@
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from api.resume import router
+from api.health import router as health_router
 from database.mongodb import init_mongodb, close_mongodb
 from core.exceptions import NotFoundException, BadRequestException
 from core.handlers import (
@@ -22,6 +24,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(CognitoAuthMiddleware)
 app.include_router(router)
+app.include_router(health_router)
 
 app.exception_handler(RequestValidationError)(validation_error_handler)
 app.exception_handler(NotFoundException)(not_found_handler)
